@@ -2,19 +2,22 @@ package main
 
 import (
 	"log"
+	"os"
 	"regexp"
 	"strings"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+}
+
 func Run(tasks ...*Task) error {
-	// reader := NewLineReader(os.Stdin)
-	// writer := NewStringWriter(os.Stdout)
-	// reader := NewPairReader(os.Stdin)
-	// writer := NewPairWriter(os.Stdout)
-	// job := NewJob(reader, writer, tasks...)
-	// runner := new(LocalRunner)
-	// return runner.Run(job)
-	return nil
+	job := NewJob(tasks...)
+	runner, err := GetRunner(os.Args)
+	if err != nil {
+		return err
+	}
+	return runner.Run(job)
 }
 
 // ----------------------------------------------------------------------------
@@ -32,10 +35,25 @@ func NewWordCount() (wc *WordCount, err error) {
 }
 
 func (wc *WordCount) Map(n int64, line string, c Collector) {
-	// c.Collect(n, line)
 	for _, word := range wc.re.FindAllString(line, -1) {
-		c.Collect(strings.ToLower(word), 1)
+		c.Collect(strings.ToLower(word), int32(1))
 	}
+}
+
+func (wc *WordCount) Combine(word string, counts chan int32, c Collector) {
+	var sum int32
+	for count := range counts {
+		sum += count
+	}
+	c.Collect(word, sum)
+}
+
+func (wc *WordCount) Reduce(word string, counts chan int32, c Collector) {
+	var sum int32
+	for count := range counts {
+		sum += count
+	}
+	c.Collect(word, sum)
 }
 
 func runWordCount() error {
@@ -51,15 +69,4 @@ func main() {
 	if err := runWordCount(); err != nil {
 		log.Fatal(err)
 	}
-	// reader := NewLineReader(os.Stdin)
-	// writer := NewPairWriter(os.Stdout)
-	// defer writer.Close()
-
-	// for {
-	//   b, line, err := reader.Next()
-	//   if err != nil {
-	//     return
-	//   }
-	//   writer.Write(b, line)
-	// }
 }

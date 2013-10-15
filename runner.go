@@ -11,6 +11,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"log"
+	"os"
 )
 
 // Given the arguments, figure out which runner should be used.
@@ -46,16 +49,12 @@ type TaskPhaseRunner struct {
 	phase  Phase
 }
 
-func NewTaskPhaseRunner(tn int, phase Phase) *TaskPhaseRunner {
-	return nil
-}
-
 func TaskPhaseRunnerFromArgs(args []string) (tpr *TaskPhaseRunner, err error) {
 	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	taskNo := fs.Int("task", 0, "task # to run")
 	phaseName := fs.String("phase", "", "phase of task to run")
 
-	if err = fs.Parse(args); err != nil {
+	if err = fs.Parse(args[1:]); err != nil {
 		return
 	}
 
@@ -72,5 +71,10 @@ func TaskPhaseRunnerFromArgs(args []string) (tpr *TaskPhaseRunner, err error) {
 }
 
 func (tpr *TaskPhaseRunner) Run(j *Job) error {
-	return nil
+	if tpr.taskNo > len(j.tasks)-1 {
+		return fmt.Errorf("No task %d", tpr.taskNo)
+	}
+	task := j.tasks[tpr.taskNo]
+	log.Printf("Running phase %d with TaskPhaseRunner", tpr.phase)
+	return task.Run(tpr.phase, os.Stdin, os.Stdout)
 }

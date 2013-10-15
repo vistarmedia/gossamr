@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 )
 
@@ -42,36 +43,43 @@ func NewTask(instance interface{}) *Task {
 	}
 }
 
-func (t *Task) Run(phase Phase, r io.Reader, w io.WriteCloser) error {
+func (t *Task) Run(phase Phase, r io.Reader, w io.WriteCloser) (err error) {
+	var input Reader
+	pairs := NewPairReader(r)
+	output := NewPairWriter(w)
+
+	defer func() {
+		log.Printf("closing output")
+		if e := output.Close(); e != nil && err == nil {
+			err = e
+		}
+	}()
+
 	var m reflect.Value
 	var ok bool
 	switch phase {
 	default:
 		return fmt.Errorf("Invalid phase %d", phase)
 	case MapPhase:
+		input = pairs
 		m, ok = t.mapper()
 	case CombinePhase:
+		input = NewGroupedReader(pairs)
 		m, ok = t.combiner()
 	case ReducePhase:
+		input = NewGroupedReader(pairs)
 		m, ok = t.reducer()
 	}
 	if !ok {
 		return fmt.Errorf("No phase %d for %s", phase, t.instance)
 	}
-	return t.run(m, r, w)
+	err = t.run(m, input, output)
+	return
 }
 
-func (t *Task) run(m reflect.Value, r io.Reader, w io.WriteCloser) (err error) {
-	input := NewPairReader(r)
-	output := NewPairWriter(w)
+func (t *Task) run(m reflect.Value, input Reader, output Writer) (err error) {
 	collector := NewWriterCollector(output)
 	colValue := reflect.ValueOf(collector)
-
-	defer func() {
-		if e := output.Close(); e != nil && err == nil {
-			err = e
-		}
-	}()
 
 	var k, v interface{}
 	for {
@@ -80,6 +88,7 @@ func (t *Task) run(m reflect.Value, r io.Reader, w io.WriteCloser) (err error) {
 			if err == io.EOF {
 				return nil
 			}
+			log.Printf("Read error: %s", err)
 			return
 		}
 		m.Call([]reflect.Value{

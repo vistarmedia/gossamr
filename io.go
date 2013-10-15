@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/markchadwick/typedbytes"
 	"io"
+	"log"
+	"reflect"
 )
 
 type Reader interface {
@@ -14,6 +16,60 @@ type Reader interface {
 type Writer interface {
 	Write(k, v interface{}) error
 	Close() error
+}
+
+// A reader that, for each key, will group all its values into a channel.
+type GroupedReader struct {
+	nextKey   interface{}
+	nextValue interface{}
+	nextError error
+	reader    Reader
+}
+
+func NewGroupedReader(reader Reader) Reader {
+	return &GroupedReader{
+		nextKey:   nil,
+		nextValue: nil,
+		reader:    reader,
+	}
+}
+
+func (gr *GroupedReader) Next() (k, v interface{}, err error) {
+	if gr.nextError != nil {
+		err = gr.nextError
+		return
+	}
+
+	if gr.nextKey == nil && gr.nextValue == nil {
+		gr.nextKey, gr.nextValue, err = gr.reader.Next()
+		if err != nil {
+			return
+		}
+	}
+
+	key := gr.nextKey
+	t := reflect.ChanOf(reflect.BothDir, reflect.TypeOf(gr.nextValue))
+	ch := reflect.MakeChan(t, 0)
+
+	go func() {
+		defer ch.Close()
+		ch.Send(reflect.ValueOf(gr.nextValue))
+		for {
+			k, v, err = gr.reader.Next()
+			if err != nil {
+				gr.nextError = err
+				return
+			}
+			if k != key {
+				log.Printf("%v != %v. Done for now", k, key)
+				gr.nextKey = k
+				gr.nextValue = v
+				return
+			}
+			ch.Send(reflect.ValueOf(v))
+		}
+	}()
+	return key, ch.Interface(), nil
 }
 
 // Read pairs serialized with Hadoop's typedbytes. It is assumed that in
