@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/markchadwick/typedbytes"
 	"io"
-	"log"
 	"reflect"
 )
 
@@ -61,7 +60,6 @@ func (gr *GroupedReader) Next() (k, v interface{}, err error) {
 				return
 			}
 			if k != key {
-				log.Printf("%v != %v. Done for now", k, key)
 				gr.nextKey = k
 				gr.nextValue = v
 				return
