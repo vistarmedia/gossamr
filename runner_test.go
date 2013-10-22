@@ -1,11 +1,10 @@
-package main
+package gossamr
 
 import (
 	"github.com/markchadwick/spec"
 )
 
 var _ = spec.Suite("Task Phase Runner", func(c *spec.C) {
-
 	c.It("should bail with missing args", func(c *spec.C) {
 		args := []string{
 			"./myprog",
@@ -35,4 +34,8 @@ var _ = spec.Suite("Task Phase Runner", func(c *spec.C) {
 		c.Assert(r.taskNo).Equals(2)
 		c.Assert(r.phase).Equals(CombinePhase)
 	})
+})
+
+var _ = spec.Suite("Local runner", func(c *spec.C) {
+	c.Skip("-pending-")
 })

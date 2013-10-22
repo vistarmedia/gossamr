@@ -1,2 +1,3 @@
+gom 'github.com/markchadwick/sortedpairs'
 gom 'github.com/markchadwick/spec'
 gom 'github.com/markchadwick/typedbytes'

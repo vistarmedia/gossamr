@@ -1,14 +1,32 @@
-package main
+package gossamr
 
 import (
 	"bufio"
+	"bytes"
 	"github.com/markchadwick/spec"
 	"io"
+	"log"
 	"testing"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+}
+
 func Test(t *testing.T) {
 	spec.Run(t)
+}
+
+type BufCloser struct {
+	*bytes.Buffer
+}
+
+func NewBufCloser() *BufCloser {
+	return &BufCloser{new(bytes.Buffer)}
+}
+
+func (bc *BufCloser) Close() error {
+	return nil
 }
 
 // An in-memory buffer to block while input is pending and it is not closed.

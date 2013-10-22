@@ -1,4 +1,4 @@
-package main
+package gossamr
 
 import (
 	"fmt"
@@ -48,13 +48,6 @@ func (t *Task) Run(phase Phase, r io.Reader, w io.WriteCloser) (err error) {
 	pairs := NewPairReader(r)
 	output := NewPairWriter(w)
 
-	defer func() {
-		log.Printf("closing output")
-		if e := output.Close(); e != nil && err == nil {
-			err = e
-		}
-	}()
-
 	var m reflect.Value
 	var ok bool
 	switch phase {
@@ -80,6 +73,13 @@ func (t *Task) Run(phase Phase, r io.Reader, w io.WriteCloser) (err error) {
 func (t *Task) run(m reflect.Value, input Reader, output Writer) (err error) {
 	collector := NewWriterCollector(output)
 	colValue := reflect.ValueOf(collector)
+
+	defer func() {
+		log.Printf("closing output")
+		if e := output.Close(); e != nil && err == nil {
+			err = e
+		}
+	}()
 
 	var k, v interface{}
 	for {

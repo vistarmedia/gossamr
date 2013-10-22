@@ -1,4 +1,4 @@
-package main
+package gossamr
 
 import (
 	"github.com/markchadwick/spec"

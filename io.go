@@ -1,4 +1,4 @@
-package main
+package gossamr
 
 import (
 	"bufio"
@@ -7,6 +7,22 @@ import (
 	"io"
 	"reflect"
 )
+
+func Copy(r Reader, w Writer) (err error) {
+	var k, v interface{}
+	for {
+		if k, v, err = r.Next(); err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return
+		}
+		if err = w.Write(k, v); err != nil {
+			return
+		}
+	}
+	return nil
+}
 
 type Reader interface {
 	Next() (k, v interface{}, err error)
