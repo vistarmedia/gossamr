@@ -16,6 +16,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 )
 
 // Given the arguments, figure out which runner should be used.
@@ -58,11 +59,15 @@ func (lr *LocalRunner) runJob(j *Job) (err error) {
 	input := NewLineReader(os.Stdin)
 	var fname string
 	var output *os.File
+
 	for i, task := range j.tasks {
 		if fname, err = lr.runTask(i, task, input); err != nil {
 			return
 		}
 	}
+
+	log.Printf("Output: %s", fname)
+
 	if fname == "" {
 		return nil
 	}
@@ -75,26 +80,79 @@ func (lr *LocalRunner) runJob(j *Job) (err error) {
 	return Copy(reader, writer)
 }
 
-func (lr *LocalRunner) runTask(i int, task *Task, in Reader) (name string, err error) {
-	mapper, ok := task.mapper()
-	if !ok {
+func (lr *LocalRunner) runTask(i int, t *Task, in Reader) (output string, err error) {
+	var f *os.File
+	mapper, hasMapper := t.mapper()
+	combiner, hasCombiner := t.combiner()
+	reducer, hasReducer := t.reducer()
+
+	// A task must have a mapper
+	if !hasMapper {
 		return "", fmt.Errorf("Task[%d] has no mapper", i)
 	}
-	var output *os.File
-	output, err = lr.open(i, "map-output")
+	mapOutput, err := lr.open(i, "mapper")
 	if err != nil {
 		return "", err
+	}
+	output = mapOutput.Name()
+
+	if hasCombiner || hasReducer {
+		if err = lr.execSorted(t, mapper, in, mapOutput); err != nil {
+			return
+		}
+	} else {
+		if err = lr.exec(t, mapper, in, mapOutput); err != nil {
+			return
+		}
 	}
 
-	writer, err := NewSortWriter(output, 1024*1024)
-	if err != nil {
-		return "", err
+	if hasCombiner {
+		combineOutput, err := lr.open(i, "combiner")
+		if err != nil {
+			return "", err
+		}
+		output = combineOutput.Name()
+
+		if f, err = os.Open(output); err != nil {
+			return output, err
+		}
+		in = NewGroupedReader(NewPairReader(f))
+		if err = lr.execSorted(t, combiner, in, combineOutput); err != nil {
+			return output, err
+		}
 	}
-	err = task.run(mapper, in, writer)
-	if err != nil {
-		return "", err
+
+	if hasReducer {
+		reduceOutput, err := lr.open(i, "reducer")
+		if err != nil {
+			return "", err
+		}
+		output = reduceOutput.Name()
+
+		if f, err = os.Open(output); err != nil {
+			return output, err
+		}
+		in = NewGroupedReader(NewPairReader(f))
+		if err = lr.execSorted(t, reducer, in, reduceOutput); err != nil {
+			return output, err
+		}
 	}
-	return output.Name(), err
+
+	return
+}
+
+func (lr *LocalRunner) execSorted(t *Task, f reflect.Value, r Reader, out *os.File) error {
+	w, err := NewSortWriter(out, 1024*1024)
+	if err != nil {
+		return err
+	}
+	return t.run(f, r, w)
+}
+
+func (lr *LocalRunner) exec(t *Task, f reflect.Value, r Reader, out *os.File) error {
+	log.Printf("exec %v", f)
+	w := NewPairWriter(out)
+	return t.run(f, r, w)
 }
 
 func (lr *LocalRunner) open(i int, name string) (f *os.File, err error) {
