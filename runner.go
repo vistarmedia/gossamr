@@ -66,8 +66,6 @@ func (lr *LocalRunner) runJob(j *Job) (err error) {
 		}
 	}
 
-	log.Printf("Output: %s", fname)
-
 	if fname == "" {
 		return nil
 	}
@@ -107,32 +105,33 @@ func (lr *LocalRunner) runTask(i int, t *Task, in Reader) (output string, err er
 	}
 
 	if hasCombiner {
+		if f, err = os.Open(output); err != nil {
+			return output, err
+		}
+		in = NewGroupedReader(NewPairReader(f))
+
 		combineOutput, err := lr.open(i, "combiner")
 		if err != nil {
 			return "", err
 		}
 		output = combineOutput.Name()
 
-		if f, err = os.Open(output); err != nil {
-			return output, err
-		}
-		in = NewGroupedReader(NewPairReader(f))
 		if err = lr.execSorted(t, combiner, in, combineOutput); err != nil {
 			return output, err
 		}
 	}
 
 	if hasReducer {
+		if f, err = os.Open(output); err != nil {
+			return output, err
+		}
+		in = NewGroupedReader(NewPairReader(f))
+
 		reduceOutput, err := lr.open(i, "reducer")
 		if err != nil {
 			return "", err
 		}
 		output = reduceOutput.Name()
-
-		if f, err = os.Open(output); err != nil {
-			return output, err
-		}
-		in = NewGroupedReader(NewPairReader(f))
 		if err = lr.execSorted(t, reducer, in, reduceOutput); err != nil {
 			return output, err
 		}
@@ -150,7 +149,6 @@ func (lr *LocalRunner) execSorted(t *Task, f reflect.Value, r Reader, out *os.Fi
 }
 
 func (lr *LocalRunner) exec(t *Task, f reflect.Value, r Reader, out *os.File) error {
-	log.Printf("exec %v", f)
 	w := NewPairWriter(out)
 	return t.run(f, r, w)
 }

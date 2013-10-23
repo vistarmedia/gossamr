@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/markchadwick/typedbytes"
 	"io"
-	"log"
 	"reflect"
 )
 
@@ -51,9 +50,7 @@ func NewGroupedReader(reader Reader) Reader {
 }
 
 func (gr *GroupedReader) Next() (k, v interface{}, err error) {
-	log.Printf("GroupedReader.next")
 	if gr.nextError != nil {
-		log.Printf("bail1: %v", err)
 		err = gr.nextError
 		return
 	}
@@ -61,10 +58,8 @@ func (gr *GroupedReader) Next() (k, v interface{}, err error) {
 	if gr.nextKey == nil && gr.nextValue == nil {
 		gr.nextKey, gr.nextValue, err = gr.reader.Next()
 		if err != nil {
-			log.Printf("bail2: %v", err)
 			return
 		}
-		log.Printf("nk: %v, nv: %v", gr.nextKey, gr.nextValue)
 	}
 
 	key := gr.nextKey

@@ -75,7 +75,6 @@ func (t *Task) run(m reflect.Value, input Reader, output Writer) (err error) {
 	colValue := reflect.ValueOf(collector)
 
 	defer func() {
-		log.Printf("closing output")
 		if e := output.Close(); e != nil && err == nil {
 			err = e
 		}
