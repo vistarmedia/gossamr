@@ -119,9 +119,8 @@ func NewLineReader(r io.Reader) *LineReader {
 func (lr *LineReader) Next() (k, v interface{}, err error) {
 	k = lr.n
 	var line []byte
-	line, _, err = lr.reader.ReadLine()
+	v, err = lr.reader.ReadString('\n')
 	lr.n += int64(len(line))
-	v = string(line)
 	return
 }
 
