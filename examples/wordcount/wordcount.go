@@ -4,8 +4,7 @@ import (
 	"log"
 	"strings"
 
-	// "github.com/vistarmedia/gossamr"
-	gossamr "../../"
+	"github.com/vistarmedia/gossamr"
 )
 
 type WordCount struct{}
