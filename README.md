@@ -24,7 +24,7 @@ func (wc *WordCount) Map(p int64, line string, c gossamr.Collector) error {
 }
 
 func (wc *WordCount) Reduce(word string, counts chan int64, c gossamr.Collector) error {
-  var sum int64 = 0
+  var sum int64
   for v := range counts {
     sum += v
   }
