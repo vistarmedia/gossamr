@@ -96,8 +96,6 @@ func (t *Task) run(m reflect.Value, input Reader, output Writer) (err error) {
 			colValue,
 		})
 	}
-
-	return
 }
 
 func (t *Task) mapper() (reflect.Value, bool) {
