@@ -21,7 +21,6 @@ func Copy(r Reader, w Writer) (err error) {
 			return
 		}
 	}
-	return nil
 }
 
 type Reader interface {
@@ -100,7 +99,7 @@ func NewPairWriter(w io.WriteCloser) Writer {
 	return typedbytes.NewPairWriter(byteWriter)
 }
 
-// Line Reader is used by basic streaming jobs. It yeilds a line number and the
+// Line Reader is used by basic streaming jobs. It yields a line number and the
 // raw line delimited by \n. The consumer must accept the arguments (int64,
 // string).
 type LineReader struct {

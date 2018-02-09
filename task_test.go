@@ -82,6 +82,8 @@ var _ = spec.Suite("Task", func(c *spec.C) {
 		c.Assert(v).Equals("Hello, costello")
 
 		k, v, err = output.Next()
+		c.Assert(k).IsNil()
+		c.Assert(v).IsNil()
 		c.Assert(err).NotNil()
 		c.Assert(err).Equals(io.EOF)
 

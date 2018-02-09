@@ -2,7 +2,7 @@
 //
 //  1. LocalRunner - Used for simulating a job locally. The sorting and
 //  combining functions of Hadoop will be emulated as best as possible, though
-//  no guarentees are made
+//  no guarantees are made
 //  2. TaskPhaseRunner - Used inter-step during a Hadoop job. This runs a single
 //  phase of a task
 //  3. JobRunner - Submits a multi-task Job to hadoop, organizing temporary
